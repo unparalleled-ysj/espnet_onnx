@@ -16,16 +16,19 @@ class TransformerLM(BatchScorerInterface):
         self,
         config,
         providers: List[str],
-        use_quantized=False
+        use_quantized=False,
+        optimize_option: onnxruntime.SessionOptions = None,
     ):
         if use_quantized:
             self.lm_session = onnxruntime.InferenceSession(
                 config.quantized_model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
         else:
             self.lm_session = onnxruntime.InferenceSession(
                 config.model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
         self.enc_output_names = ['y'] \

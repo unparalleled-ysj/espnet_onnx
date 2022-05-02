@@ -14,7 +14,8 @@ class RNNDecoder(BatchScorerInterface):
         self,
         config: Config,
         providers: List[str],
-        use_quantized: bool = False
+        use_quantized: bool = False,
+        optimize_option: onnxruntime.SessionOptions = None
     ):
         """Onnx support for espnet2.asr.decoder.rnn_decoder.RNNDecoder
 
@@ -33,6 +34,7 @@ class RNNDecoder(BatchScorerInterface):
             self.predecoders.append(
                 onnxruntime.InferenceSession(
                     model_path,
+                    sess_options=optimize_option,
                     providers=providers
                 )
             )
@@ -41,11 +43,13 @@ class RNNDecoder(BatchScorerInterface):
         if use_quantized:
             self.decoder = onnxruntime.InferenceSession(
                 config.quantized_model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
         else:
             self.decoder = onnxruntime.InferenceSession(
                 config.model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
             

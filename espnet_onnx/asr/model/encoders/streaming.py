@@ -19,14 +19,17 @@ class StreamingEncoder:
         encoder_config: Config,
         providers: List[str],
         use_quantized: bool = False,
+        optimize_option: onnxruntime.SessionOptions = None,
     ):
         self.config = encoder_config
         if use_quantized:
             self.encoder = onnxruntime.InferenceSession(
-                self.config.quantized_model_path)
+                self.config.quantized_model_path,
+                sess_options=optimize_option,)
         else:
             self.encoder = onnxruntime.InferenceSession(
-                self.config.model_path)
+                self.config.model_path,
+                sess_options=optimize_option,)
 
         self.frontend = Frontend(self.config.frontend)
         if self.config.do_normalize:

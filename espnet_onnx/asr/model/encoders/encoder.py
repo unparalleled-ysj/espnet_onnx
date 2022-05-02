@@ -24,16 +24,19 @@ class Encoder:
         encoder_config: Config,
         providers: List[str],
         use_quantized: bool = False,
+        optimize_option: onnxruntime.SessionOptions = None,
     ):
         self.config = encoder_config
         if use_quantized:
             self.encoder = onnxruntime.InferenceSession(
                 self.config.quantized_model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
         else:
             self.encoder = onnxruntime.InferenceSession(
                 self.config.model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
 

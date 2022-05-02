@@ -111,7 +111,8 @@ class CTCPrefixScore:
 class CTCPrefixScorer(BatchPartialScorerInterface):
     """Decoder interface wrapper for CTCPrefixScore."""
 
-    def __init__(self, ctc: Config, eos: int, providers: List[str], use_quantized: bool = False):
+    def __init__(self, ctc: Config, eos: int, providers: List[str], use_quantized: bool = False,
+                optimize_option = None):
         """Initialize class.
         Args:
             ctc (np.ndarray): The CTC implementation.
@@ -122,11 +123,13 @@ class CTCPrefixScorer(BatchPartialScorerInterface):
         if use_quantized:
             self.ctc = onnxruntime.InferenceSession(
                 ctc.quantized_model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
         else:
             self.ctc = onnxruntime.InferenceSession(
                 ctc.model_path,
+                sess_options=optimize_option,
                 providers=providers
             )
         self.eos = eos

@@ -1,7 +1,10 @@
-from typing import Union
-from typing import List
-from typing import Tuple
-from typing import Optional
+from typing import (
+    Union,
+    List,
+    Tuple,
+    Optional,
+    Dict
+)
 from pathlib import Path
 from typeguard import check_argument_types
 import warnings
@@ -26,10 +29,12 @@ class Speech2Text(AbsASRModel):
                  model_dir: Union[Path, str] = None,
                  providers: List[str] = ['CPUExecutionProvider'],
                  use_quantized: bool = False,
+                 optimizer: Dict[str, str] = None 
                  ):
         assert check_argument_types()
         self._check_argument(tag_name, model_dir)
         self._load_config()
+        self._check_optimize_option(optimizer)
         
         # check onnxruntime version and providers
         self._check_ort_version(providers)

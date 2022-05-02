@@ -3,6 +3,7 @@ from abc import ABC
 import os
 import glob
 import logging
+import onnxruntime as ort
 
 from espnet_onnx.asr.model.encoder import get_encoder
 from espnet_onnx.asr.model.decoder import get_decoder
@@ -40,6 +41,26 @@ class AbsASRModel(ABC):
     def _load_config(self):
         config_file = glob.glob(os.path.join(self.model_dir, 'config.*'))[0]
         self.config = get_config(config_file)
+    
+    def _check_optimize_option(self, option):
+        if option is None:
+            self.optimize_option = None
+            return
+        
+        sess_options = ort.SessionOptions()
+        
+        if option['optimization_level'] == 'basic':
+            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
+        
+        elif option['optimization_level'] == 'extended':
+            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+        
+        elif option['optimization_level'] == 'all':
+            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        else:
+            raise ValueError('Optimization level should be one of ["basic", "extended", "all"].')
+        
+        self.optimize_option = sess_options
     
     def _build_beam_search(self, scorers, weights):
         if self.config.transducer.use_transducer_decoder:
@@ -83,12 +104,12 @@ class AbsASRModel(ABC):
         self.converter = TokenIDConverter(token_list=self.config.token.list)
     
     def _build_model(self, providers, use_quantized):
-        self.encoder = get_encoder(self.config.encoder, providers, use_quantized)
-        decoder = get_decoder(self.config.decoder, providers, use_quantized)
+        self.encoder = get_encoder(self.config.encoder, providers, use_quantized, self.optimize_option)
+        decoder = get_decoder(self.config.decoder, providers, use_quantized, self.optimize_option)
         scorers = {'decoder': decoder}
         weights = {}
         if not self.config.transducer.use_transducer_decoder:
-            ctc = CTCPrefixScorer(self.config.ctc, self.config.token.eos, providers, use_quantized)
+            ctc = CTCPrefixScorer(self.config.ctc, self.config.token.eos, providers, use_quantized, self.optimize_option)
             scorers.update(
                 ctc=ctc,
                 length_bonus=LengthBonus(len(self.config.token.list))
@@ -99,10 +120,10 @@ class AbsASRModel(ABC):
                 length_bonus=self.config.weights.length_bonus,
             )
         else:
-            joint_network = JointNetwork(self.config.joint_network, providers, use_quantized)
+            joint_network = JointNetwork(self.config.joint_network, providers, use_quantized, self.optimize_option)
             scorers.update(joint_network=joint_network)
             
-        lm = get_lm(self.config, providers, use_quantized)
+        lm = get_lm(self.config, providers, use_quantized, self.optimize_option)
         if lm is not None:
             scorers.update(lm=lm)
             weights.update(lm=self.config.weights.lm)

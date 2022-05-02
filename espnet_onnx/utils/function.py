@@ -151,7 +151,8 @@ def topk(x: np.ndarray, k: int, require_value: bool = False):
                [3,0],
                [2,3]])
     """
-    topk_index = bn.argpartition(x, x.shape[-1] - k, axis=-1)[..., -k:]
+    # topk_index = bn.argpartition(x, x.shape[-1] - k, axis=-1)[..., -k:]
+    topk_index = np.argpartition(x, x.shape[-1] - k, axis=-1)[..., -k:]
     if require_value:
         return np.take_along_axis(x, topk_index, axis=-1), topk_index
     else:
