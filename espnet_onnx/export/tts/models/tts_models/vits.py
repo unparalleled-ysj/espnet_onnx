@@ -102,7 +102,7 @@ class OnnxVITSGenerator(nn.Module):
             g = self.model.global_emb(sids.view(-1)).unsqueeze(-1)
         if self.model.spk_embed_dim is not None:
             # (B, global_channels, 1)
-            g_ = self.model.spemb_proj(F.normalize(
+            g_ = self.model.spemb_proj(nn.functional.normalize(
                 spembs.unsqueeze(0))).unsqueeze(-1)
             if g is None:
                 g = g_
@@ -274,7 +274,8 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
             if self.model.generator.spks is not None else None
 
         spembs = torch.randn(self.model.generator.spk_embed_dim) \
-            if self.model.generator.spks is not None else None
+            if self.model.generator.spk_embed_dim is not None else None
+            # if self.model.generator.spks is not None else None
 
         lids = torch.LongTensor([0]) \
             if self.model.generator.langs is not None else None
