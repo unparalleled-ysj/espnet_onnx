@@ -278,7 +278,7 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
 
         spembs = torch.randn(self.model.generator.spk_embed_dim) \
             if self.model.generator.spk_embed_dim is not None else None
-            
+
         lids = torch.LongTensor([0]) \
             if self.model.generator.langs is not None else None
 
