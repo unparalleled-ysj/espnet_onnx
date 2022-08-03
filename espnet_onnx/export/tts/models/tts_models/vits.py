@@ -72,6 +72,7 @@ class OnnxVITSGenerator(nn.Module):
         spembs: Optional[torch.Tensor] = None,
         lids: Optional[torch.Tensor] = None,
         dur: Optional[torch.Tensor] = None,
+        speed_control_alpha: torch.Tensor = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Run inference.
 
@@ -175,7 +176,7 @@ class OnnxVITSGenerator(nn.Module):
                     inverse=True,
                     noise_scale=self.noise_scale_dur,
                 )
-                w = torch.exp(logw) * x_mask * self.alpha
+                w = torch.exp(logw) * x_mask * speed_control_alpha
                 dur = torch.ceil(w)
             y_lengths = torch.clamp_min(torch.sum(dur, [1, 2]), 1).long()
             
@@ -239,6 +240,7 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
         spembs: Optional[torch.Tensor] = None,
         lids: Optional[torch.Tensor] = None,
         durations: Optional[torch.Tensor] = None,
+        speed_control_alpha: torch.Tensor = torch.tensor(1.0),
     ):
         # setup
         text = text[None]
@@ -256,6 +258,7 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
                 sids=sids,
                 spembs=spembs,
                 lids=lids,
+                speed_control_alpha=speed_control_alpha,
             )
         else:
             wav, att_w, dur = self.generator(
@@ -265,6 +268,7 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
                 spembs=spembs,
                 lids=lids,
                 dur=durations,
+                speed_control_alpha=speed_control_alpha,
             )
         return dict(wav=wav.view(-1), att_w=att_w[0], duration=dur[0])
 
@@ -284,8 +288,10 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
 
         duration = torch.randn(text.size(0)) \
             if not self.predict_duration else None
+        
+        speed_control_alpha = torch.tensor(1.0)
 
-        return (text, feats, sids, spembs, lids, duration)
+        return (text, feats, sids, spembs, lids, duration, speed_control_alpha)
 
     def get_input_names(self):
         ret = ['text']
@@ -299,6 +305,7 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
             ret.append('lids')
         if not self.predict_duration:
             ret.append('duration')
+        ret.append('speed_control_alpha')
         return ret
 
     def get_output_names(self):

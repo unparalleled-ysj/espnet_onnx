@@ -96,6 +96,7 @@ class OnnxJETSGenerator(nn.Module):
         sids: Optional[torch.Tensor] = None,
         spembs: Optional[torch.Tensor] = None,
         lids: Optional[torch.Tensor] = None,
+        speed_control_alpha: torch.Tensor = None,
     ):
         x_masks = self._source_mask(text_lengths)
         hs, _ = self.encoder(text, x_masks)  # (B, T_text, adim)
@@ -122,6 +123,7 @@ class OnnxJETSGenerator(nn.Module):
         p_outs = self.pitch_predictor(hs, h_masks.unsqueeze(-1))
         e_outs = self.energy_predictor(hs, h_masks.unsqueeze(-1))
         d_outs = self.duration_predictor.inference(hs, h_masks)
+        d_outs = torch.round(d_outs.float() * speed_control_alpha).long()
 
         p_embs = self.pitch_embed(p_outs.transpose(1, 2)).transpose(1, 2)
         e_embs = self.energy_embed(e_outs.transpose(1, 2)).transpose(1, 2)
@@ -179,6 +181,7 @@ class OnnxJETSModel(nn.Module, AbsExportModel):
         sids: Optional[torch.Tensor] = None,
         spembs: Optional[torch.Tensor] = None,
         lids: Optional[torch.Tensor] = None,
+        speed_control_alpha: torch.Tensor = torch.tensor(1.0),
     ):
         # setup
         text = text[None]
@@ -190,6 +193,7 @@ class OnnxJETSModel(nn.Module, AbsExportModel):
             sids=sids,
             spembs=spembs,
             lids=lids,
+            speed_control_alpha=speed_control_alpha,
         )
         return dict(wav=wav.view(-1), duration=dur[0])
 
@@ -205,7 +209,9 @@ class OnnxJETSModel(nn.Module, AbsExportModel):
         lids = torch.LongTensor([0]) \
             if self.model.generator.langs is not None else None
 
-        return (text, sids, spembs, lids)
+        speed_control_alpha = torch.tensor(1.0)
+
+        return (text, sids, spembs, lids, speed_control_alpha)
 
     def get_input_names(self):
         ret = ['text']   
@@ -215,6 +221,7 @@ class OnnxJETSModel(nn.Module, AbsExportModel):
             ret.append('spembs')
         if self.model.generator.langs is not None:
             ret.append('lids')
+        ret.append('speed_control_alpha')
         return ret
 
     def get_output_names(self):
