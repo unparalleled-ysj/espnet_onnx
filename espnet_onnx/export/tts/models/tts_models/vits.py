@@ -270,6 +270,11 @@ class OnnxVITSModel(nn.Module, AbsExportModel):
                 dur=durations,
                 speed_control_alpha=speed_control_alpha,
             )
+            
+        if self.model.use_pqmf:
+            wav = self.model.pqmf.synthesis(wav)
+            wav = wav.squeeze(0).transpose(0, 1)
+            
         return dict(wav=wav.view(-1), att_w=att_w[0], duration=dur[0])
 
     def get_dummy_inputs(self):

@@ -195,6 +195,11 @@ class OnnxJETSModel(nn.Module, AbsExportModel):
             lids=lids,
             speed_control_alpha=speed_control_alpha,
         )
+
+        if self.model.use_pqmf:
+            wav = self.model.pqmf.synthesis(wav.unsqueeze(0).transpose(1,2))
+            wav = wav.squeeze(0).transpose(0, 1)
+
         return dict(wav=wav.view(-1), duration=dur[0])
 
     def get_dummy_inputs(self):
