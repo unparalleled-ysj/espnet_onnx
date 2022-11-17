@@ -83,10 +83,11 @@ class XformerDecoder(BatchScorerInterface):
             ['y'] + self.out_caches,
             input_dict
         )
-
+        
         # transpose state of [layer, batch] into [batch, layer]
         state_list = [[states[i][b]
                        for i in range(self.n_layers)] for b in range(n_batch)]
+
         return logp, state_list
 
     def get_input_dict(self, ys, xs, state):

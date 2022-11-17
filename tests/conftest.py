@@ -1,4 +1,5 @@
 import os
+import glob
 import pytest
 from pathlib import Path
 
@@ -41,11 +42,14 @@ from espnet2.asr.frontend.default import DefaultFrontend
 from espnet2.asr.frontend.fused import FusedFrontends
 from espnet2.asr.frontend.s3prl import S3prlFrontend
 from espnet2.asr.frontend.windowing import SlidingWindow
-from espnet2.asr.transducer.transducer_decoder import TransducerDecoder
 from espnet2.lm.abs_model import AbsLM
 from espnet2.lm.seq_rnn_lm import SequentialRNNLM
 from espnet2.lm.transformer_lm import TransformerLM
 from espnet2.train.class_choices import ClassChoices
+try:
+    from espnet2.asr.transducer.transducer_decoder import TransducerDecoder
+except:
+    from espnet2.asr.decoder.transducer_decoder import TransducerDecoder
 
 from espnet2.tts.abs_tts import AbsTTS
 from espnet2.gan_tts.joint import JointText2Wav
@@ -65,6 +69,9 @@ def pytest_addoption(parser):
     parser.addoption('--config_dir', action='store',
                      default=None, type=str,
                      help='Path to the config directory.')
+    parser.addoption('--wav_dir', action='store',
+                     default=None, type=str,
+                     help='Path to the wav files for integration test.')
 
 
 @pytest.fixture
@@ -168,5 +175,11 @@ def get_class():
     def _method(model_type, class_name, class_config, **kwargs):
         cc = class_choices[model_type]
         selected_class = cc.get_class(class_name)
-        return selected_class(**kwargs, **class_config.dic)
+        return selected_class(**kwargs, **class_config)
     return _method
+
+
+@pytest.fixture
+def wav_files(request):
+    wav_dir = request.config.getoption('--wav_dir')
+    return glob.glob(os.path.join(wav_dir, '*'))

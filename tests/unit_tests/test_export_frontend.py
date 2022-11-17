@@ -11,14 +11,12 @@ import numpy as np
 
 from espnet_onnx.export.asr.models import (
     get_encoder,
-    get_decoder,
-    get_lm,
 )
 from espnet_onnx.export.layers.attention import OnnxNoAtt
 from espnet_onnx.utils.config import save_config
 
 from espnet_onnx.export.optimize.optimizer import optimize_model
-from .op_test_utils import check_op_type_count
+from ..op_test_utils import check_op_type_count
 
 
 encoder_cases = [
@@ -45,7 +43,7 @@ def test_export_frontend(enc_type, load_config, model_export, get_class):
     frontend = get_class(
         'frontend',
         model_config.frontend,
-        model_config.frontend_conf
+        model_config.frontend_conf.dic
     )
     
     export_dir = Path(model_export.cache_dir) / 'test' / \
@@ -59,7 +57,7 @@ def test_export_frontend(enc_type, load_config, model_export, get_class):
     encoder = get_class(
         'encoder',
         model_config.encoder,
-        model_config.encoder_conf,
+        model_config.encoder_conf.dic,
         input_size=input_size
     )
     enc_wrapper = get_encoder(encoder, frontend, None, {})
@@ -98,5 +96,5 @@ def test_optimize_frontend(model_type, model_name, n_head, h_size, n_att, n_cros
     if n_cross_att > 0:
         nodes['CrossAttention'] = n_cross_att
         
-    check_op_type_count(str(output_dir / model_name), **nodes)
+    check_op_type_count(str(output_dir / model_name), nodes)
     
